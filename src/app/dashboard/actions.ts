@@ -3,8 +3,8 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth'
 import { prisma } from '@/prisma'
-import axios from 'axios'
 import amqp from 'amqplib/callback_api'
+import { getSpotifyAccessToken } from '@/util/spotify'
 
 export async function isUserConnected() {
   const session = await getServerSession(authOptions)
@@ -20,29 +20,12 @@ export async function isUserConnected() {
   if (!user) return false
   if (!user.spotifyRefreshToken) return false
 
-  try {
-    const result = await axios('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization:
-          'Basic ' +
-          Buffer.from(
-            process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
-          ).toString('base64')
-      },
-      data: {
-        grant_type: 'refresh_token',
-        refresh_token: user.spotifyRefreshToken
-      }
-    })
-    if (result.status === 200) {
-      return true
-    }
-    return false
-  } catch (e) {
+  const result = await getSpotifyAccessToken(user.spotifyRefreshToken)
+  if (!result) {
     return false
   }
+
+  return true
 }
 
 export async function isActiveUser() {
