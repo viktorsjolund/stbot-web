@@ -3,7 +3,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth'
 import { prisma } from '@/prisma'
-import amqp from 'amqplib/callback_api'
+import amqp from 'amqplib'
 import { getSpotifyAccessToken } from '@/util/spotify'
 
 export async function isUserConnected() {
@@ -66,31 +66,19 @@ export async function addActiveUser() {
     throw e
   }
 
-  amqp.connect(process.env.AMQP_URL!, (err, connection) => {
-    if (err) {
-      throw err
-    }
-
-    connection.createChannel((err1, channel) => {
-      if (err1) {
-        throw err1
-      }
-
-      const queue = 'send'
-      const msg = 'JOIN #' + session.user.name!
-
-      channel.assertQueue(queue, {
-        durable: false
-      })
-
-      channel.sendToQueue(queue, Buffer.from(msg))
-      console.log(`[x] Sent ${msg}`)
-    })
-
-    setTimeout(() => {
-      connection.close()
-    }, 500)
-  })
+  try {
+    const conn = await amqp.connect(process.env.AMQP_URL!)
+    const ch = await conn.createChannel()
+    const queue = 'send'
+    const msg = 'JOIN #' + session.user.name!
+    await ch.assertQueue(queue, { durable: false })
+    ch.sendToQueue(queue, Buffer.from(msg))
+    console.log(`[x] Sent ${msg}`)
+    await ch.close()
+    await conn.close()
+  } catch (e) {
+    throw e
+  }
 }
 
 export async function removeActiveUser() {
@@ -109,29 +97,17 @@ export async function removeActiveUser() {
     throw e
   }
 
-  amqp.connect(process.env.AMQP_URL!, (err, connection) => {
-    if (err) {
-      throw err
-    }
-
-    connection.createChannel((err1, channel) => {
-      if (err1) {
-        throw err1
-      }
-
-      const queue = 'send'
-      const msg = 'PART #' + session.user.name!
-
-      channel.assertQueue(queue, {
-        durable: false
-      })
-
-      channel.sendToQueue(queue, Buffer.from(msg))
-      console.log(`[x] Sent ${msg}`)
-    })
-
-    setTimeout(() => {
-      connection.close()
-    }, 500)
-  })
+  try {
+    const conn = await amqp.connect(process.env.AMQP_URL!)
+    const ch = await conn.createChannel()
+    const queue = 'send'
+    const msg = 'PART #' + session.user.name!
+    await ch.assertQueue(queue, { durable: false })
+    ch.sendToQueue(queue, Buffer.from(msg))
+    console.log(`[x] Sent ${msg}`)
+    await ch.close()
+    await conn.close()
+  } catch (e) {
+    throw e
+  }
 }
