@@ -34,7 +34,7 @@ export default function Home() {
           </button>
         )}
         <a
-          href='https://github.com/ViktorSjolund/rust-ttv-song-bot'
+          href='https://github.com/ViktorSjolund/stbot'
           target='_blank'
         >
           <Button
