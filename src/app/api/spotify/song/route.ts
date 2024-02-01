@@ -13,10 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     user = await prisma.user.findFirst({
       where: {
-        name: {
-          equals: channelName,
-          mode: 'insensitive'
-        }
+        name: channelName
       },
       include: {
         activeUser: true
