@@ -38,3 +38,5 @@ export const getCurrentSong = async (accessToken: string): Promise<{ status: num
     return null
   }
 }
+
+export const dynamic = 'force-dynamic'
