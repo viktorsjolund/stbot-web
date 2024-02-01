@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [{
       hostname: 'static-cdn.jtvnw.net',
       protocol: 'https',
-      pathname: '/jtv_user_pictures/**'
+      pathname: '/**'
     }]
   }
 };
