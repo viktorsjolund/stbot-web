@@ -4,16 +4,19 @@ import { ActiveUser, User } from '@prisma/client'
 import { getCurrentSong, getSpotifyAccessToken } from '@/util/spotify'
 
 export async function GET(req: NextRequest) {
-  const username = req.nextUrl.searchParams.get('username')
-  if (!username) {
+  const channelName = req.nextUrl.searchParams.get('channel_name')
+  if (!channelName) {
     return NextResponse.json({ error: 'No username provided.' }, { status: 400 })
   }
 
   let user: (User & { activeUser: ActiveUser | null }) | null
   try {
-    user = await prisma.user.findUnique({
+    user = await prisma.user.findFirst({
       where: {
-        name: username
+        name: {
+          equals: channelName,
+          mode: 'insensitive'
+        }
       },
       include: {
         activeUser: true
@@ -41,5 +44,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 
-  return NextResponse.json({ song })
+  if (song.status === 204) {
+    return new Response(null, { status: 204 })
+  }
+
+  return NextResponse.json({ ...song.data })
 }
