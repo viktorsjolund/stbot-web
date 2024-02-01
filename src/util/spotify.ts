@@ -22,14 +22,18 @@ export const getSpotifyAccessToken = async (refreshToken: string): Promise<strin
   }
 }
 
-export const getCurrentSong = async (accessToken: string): Promise<Object | null> => {
+export const getCurrentSong = async (accessToken: string): Promise<{ status: number, data: Object } | null> => {
   try {
     const result = await axios('https://api.spotify.com/v1/me/player/currently-playing', {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     })
-    return result.data
+
+    return {
+      data: result.data,
+      status: result.status
+    }
   } catch (e) {
     return null
   }
