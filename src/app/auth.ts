@@ -8,7 +8,12 @@ export const authOptions: AuthOptions = {
   providers: [
     TwitchProvider({
       clientId: process.env.TWITCH_CLIENT_ID!,
-      clientSecret: process.env.TWITCH_CLIENT_SECRET!
+      clientSecret: process.env.TWITCH_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: 'openid user:read:email channel:manage:redemptions channel:read:subscriptions'
+        }
+      }
     })
   ],
   adapter: PrismaAdapter(prisma) as Adapter,
