@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { getSpotifyAccessToken } from '@/util/spotify'
-import { buffer } from 'micro'
 import { HmacHandler } from '@/util/hmacHandler'
 import { NextRequest, NextResponse } from 'next/server'
 import { NextApiResponse } from 'next'
