@@ -224,7 +224,7 @@ export default function Dashboard() {
             <Link
               href={`https://accounts.spotify.com/authorize?response_type=code&client_id=${
                 process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
-              }&scope=user-read-currently-playing+user-read-playback-state&redirect_uri=${
+              }&scope=user-read-currently-playing+user-read-playback-state+user-modify-playback-state&redirect_uri=${
                 process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI
               }&state=${crypto.randomUUID()}`}
               className='inline-block'
