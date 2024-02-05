@@ -36,3 +36,30 @@ export const getTwitchAppAccessToken = async () => {
     return null
   }
 }
+
+export const refundChannelPoints = async (
+  redemptionId: string,
+  rewardId: string,
+  broadcasterId: string,
+  accessToken: string
+) => {
+  try {
+    await axios('https://api.twitch.tv/helix/channel_points/custom_rewards/redemptions', {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Client-Id': process.env.TWITCH_CLIENT_ID
+      },
+      data: {
+        status: 'CANCELED'
+      },
+      params: {
+        id: redemptionId,
+        broadcaster_id: broadcasterId,
+        reward_id: rewardId
+      }
+    })
+  } catch (e) {
+    throw e
+  }
+}

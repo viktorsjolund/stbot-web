@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { User } from '@prisma/client'
 import { sendMessageToQueue } from '@/util/messageBroker'
+import { refundChannelPoints } from '@/util/twitch'
 const messageIds = new Set<string>()
 
 async function handler(req: NextRequest) {
@@ -68,9 +69,13 @@ async function handler(req: NextRequest) {
   if (!accessToken) {
     return NextResponse.json({ error: 'Could not get access token.' }, { status: 500 })
   }
-  let trackId = ''
 
-  if (input.includes('open.spotify.com/track/')) {
+  let trackId = ''
+  const broadcasterId = body.event.broadcaster_user_id
+  const redemptionId = body.event.id
+  const rewardId = body.event.reward.id
+
+  if (input.includes('open.spotify.com')) {
     const tokens = input.split('/')
     trackId = tokens[tokens.length - 1].split('?')[0]
   } else {
@@ -99,6 +104,7 @@ async function handler(req: NextRequest) {
 
       trackId = result.data.tracks.items[0].uri.split(':')[2]
     } catch (e) {
+      await refundChannelPoints(redemptionId, rewardId, broadcasterId, accessToken)
       return NextResponse.json({ error: 'Something went wrong...' }, { status: 500 })
     }
   }
@@ -114,6 +120,7 @@ async function handler(req: NextRequest) {
     track = result.data
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not find song.')
+    await refundChannelPoints(redemptionId, rewardId, broadcasterId, accessToken)
     return NextResponse.json({ error: `Could not find song with id: ${trackId}` }, { status: 400 })
   }
 
@@ -128,6 +135,7 @@ async function handler(req: NextRequest) {
     await sendMessageToQueue(user.name!, `> ${track.artists[0].name} - ${track.name}`)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not queue song.')
+    await refundChannelPoints(redemptionId, rewardId, broadcasterId, accessToken)
     return NextResponse.json({ error: 'Could not queue song' }, { status: 400 })
   }
 
