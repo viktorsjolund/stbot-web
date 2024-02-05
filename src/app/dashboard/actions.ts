@@ -117,7 +117,7 @@ export async function enableSongRequests() {
   try {
     user = await prisma.user.findUnique({
       where: {
-        id: session.user.id 
+        id: session.user.id
       },
       include: {
         accounts: true
@@ -151,9 +151,10 @@ export async function enableSongRequests() {
         broadcaster_id: broadcasterId
       },
       data: {
-        title: 'Queue a song - STBOT6',
-        prompt: '',
-        cost: 1,
+        title: 'Queue a song - STBOT',
+        prompt:
+          'Enter a Spotify song link below or do "ARTIST - SONG NAME" (the dash is important). Note: This only works for songs that are on Spotify.',
+        cost: 50000,
         is_user_input_required: true
       }
     })
@@ -213,7 +214,7 @@ export async function disableSongRequests() {
   try {
     user = await prisma.user.findUnique({
       where: {
-        id: session.user.id 
+        id: session.user.id
       },
       include: {
         accounts: true,
