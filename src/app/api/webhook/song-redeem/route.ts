@@ -82,6 +82,11 @@ async function handler(req: NextRequest) {
     const tokens = input.split('-')
 
     if (tokens.length !== 2) {
+      await sendMessageToQueue(
+        user.name!,
+        "Could not queue. Don't use dashes in the artist/song name"
+      )
+      await refundChannelPoints(redemptionId, rewardId, broadcasterId, accessToken)
       return NextResponse.json({ error: 'Bad input' }, { status: 400 })
     }
 
