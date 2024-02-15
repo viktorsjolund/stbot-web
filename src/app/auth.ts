@@ -11,7 +11,7 @@ export const authOptions: AuthOptions = {
       clientSecret: process.env.TWITCH_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: 'openid user:read:email channel:manage:redemptions channel:read:subscriptions'
+          scope: 'openid user:read:email channel:manage:redemptions'
         }
       }
     })
@@ -27,6 +27,8 @@ export const authOptions: AuthOptions = {
     })
   },
   pages: {
-    newUser: '/dashboard'
+    newUser: '/dashboard',
+    signIn: '/',
+    signOut: '/'
   }
 }
