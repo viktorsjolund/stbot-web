@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const getSpotifyAccessToken = async (refreshToken: string): Promise<string | null> => {
+export async function getSpotifyAccessToken(refreshToken: string): Promise<string | null> {
   try {
     const result = await axios('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -22,7 +22,9 @@ export const getSpotifyAccessToken = async (refreshToken: string): Promise<strin
   }
 }
 
-export const getCurrentSong = async (accessToken: string): Promise<{ status: number, data: Object } | null> => {
+export async function getCurrentSong(
+  accessToken: string
+): Promise<{ status: number; data: Object } | null> {
   try {
     const result = await axios('https://api.spotify.com/v1/me/player/currently-playing', {
       headers: {
@@ -39,4 +41,51 @@ export const getCurrentSong = async (accessToken: string): Promise<{ status: num
   }
 }
 
-export const dynamic = 'force-dynamic'
+export async function getTrackIdFromSearch(song: string, artist: string, accessToken: string) {
+  try {
+    const result = await axios('https://api.spotify.com/v1/search', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      params: {
+        q: `remaster%20track:${song}%20artist:${artist}`,
+        type: 'track',
+        limit: 1,
+        offset: 0
+      }
+    })
+
+    return result.data.tracks.items[0].uri.split(':')[2] as string
+  } catch (e) {
+    throw e
+  }
+}
+
+export async function getTrack(trackId: string, accessToken: string) {
+  try {
+    const result = await axios(`https://api.spotify.com/v1/tracks/${trackId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    })
+    return result.data
+  } catch (e) {
+    throw e
+  }
+}
+
+export async function queueSong(trackId: string, accessToken: string) {
+  try {
+    await axios('https://api.spotify.com/v1/me/player/queue', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      params: { uri: `spotify:track:${trackId}` }
+    })
+  } catch (e) {
+    throw e
+  }
+}

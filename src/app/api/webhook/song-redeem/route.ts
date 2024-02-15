@@ -1,6 +1,5 @@
-import axios from 'axios'
-import { getSpotifyAccessToken } from '@/util/spotify'
-import { HmacHandler } from '@/util/hmacHandler'
+import { getSpotifyAccessToken, getTrack, getTrackIdFromSearch, queueSong } from '@/util/spotify'
+import { getHmac, getHmacMessage, verifyMessage } from '@/util/hmacHandler'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { User } from '@prisma/client'
@@ -9,7 +8,6 @@ import { refundChannelPoints } from '@/util/twitch'
 const messageIds = new Set<string>()
 
 async function handler(req: NextRequest) {
-  const hmh = new HmacHandler()
   const rawBody = Buffer.from(await req.arrayBuffer())
   const body = JSON.parse(rawBody.toString())
 
@@ -25,10 +23,10 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid headers' }, { status: 400 })
   }
 
-  const message = hmh.getHmacMessage(req, rawBody)
-  const hmac = 'sha256=' + hmh.getHmac(message)
+  const message = getHmacMessage(req, rawBody)
+  const hmac = 'sha256=' + getHmac(message)
 
-  if (!hmh.verifyMessage(hmac, req.headers.get('twitch-eventsub-message-signature')!)) {
+  if (!verifyMessage(hmac, req.headers.get('twitch-eventsub-message-signature')!)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
@@ -94,20 +92,7 @@ async function handler(req: NextRequest) {
     const song = tokens[tokens.length - 1].trim()
 
     try {
-      const result = await axios('https://api.spotify.com/v1/search', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
-        params: {
-          q: `remaster%20track:${song}%20artist:${artist}`,
-          type: 'track',
-          limit: 1,
-          offset: 0
-        }
-      })
-
-      trackId = result.data.tracks.items[0].uri.split(':')[2]
+      trackId = await getTrackIdFromSearch(song, artist, accessToken)
     } catch (e) {
       await refundChannelPoints(redemptionId, rewardId, broadcasterId, accessToken)
       return NextResponse.json({ error: 'Something went wrong...' }, { status: 500 })
@@ -116,13 +101,7 @@ async function handler(req: NextRequest) {
 
   let track
   try {
-    const result = await axios(`https://api.spotify.com/v1/tracks/${trackId}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    })
-    track = result.data
+    track = await getTrack(trackId, accessToken)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not find song.')
     await refundChannelPoints(redemptionId, rewardId, broadcasterId, accessToken)
@@ -130,13 +109,7 @@ async function handler(req: NextRequest) {
   }
 
   try {
-    await axios('https://api.spotify.com/v1/me/player/queue', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      },
-      params: { uri: `spotify:track:${trackId}` }
-    })
+    await queueSong(trackId, accessToken)
     await sendMessageToQueue(user.name!, `> ${track.artists[0].name} - ${track.name}`)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not queue song.')
