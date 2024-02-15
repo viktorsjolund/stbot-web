@@ -21,7 +21,8 @@ import { useToast } from '@/components/ui/use-toast'
 import { IoIosCheckmarkCircleOutline } from 'react-icons/io'
 import { Loader2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { PiWarningCircle } from 'react-icons/pi'
 
 export default function Dashboard() {
   const [isConnected, setIsConnected] = useState<boolean>()
@@ -32,7 +33,10 @@ export default function Dashboard() {
   })
   const [prevSettings, setPrevSettings] = useState(settings)
   const [isSaving, setIsSaving] = useState(false)
+  const [isInitialFetch, setIsInitialFetch] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
   const { data: session, status } = useSession({
     required: true,
     onUnauthenticated: () => router.push('/')
@@ -40,27 +44,47 @@ export default function Dashboard() {
   const { toast } = useToast()
 
   useEffect(() => {
-    if (settings.isLoading && session) {
-      ;(async () => {
-        const connected = await isUserConnected(session)
-        const activeUser = await isActiveUser(session)
-        const songRedeemEnabled = await isSongRedeemEnabled(session)
-        setIsConnected(connected)
-        setSettings({
-          ...settings,
-          botEnabled: activeUser,
-          songRedeemEnabled,
-          isLoading: false
-        })
-        setPrevSettings({
-          ...settings,
-          botEnabled: activeUser,
-          songRedeemEnabled,
-          isLoading: false
-        })
-      })()
+    if (isInitialFetch && session) {
+      setIsInitialFetch(false)
+      if (error) {
+        setTimeout(() => {
+          toast({
+            description: (
+              <div className='flex items-center space-x-2'>
+                <div>
+                  <PiWarningCircle size={20} />
+                </div>
+                <span>{error.toUpperCase()}</span>
+              </div>
+            ),
+            variant: 'destructive'
+          })
+        }, 0)
+      }
+      if (settings.isLoading) {
+        ;(async () => {
+          const [connected, activeUser, songRedeemEnabled] = await Promise.all([
+            isUserConnected(session),
+            isActiveUser(session),
+            isSongRedeemEnabled(session)
+          ])
+          setIsConnected(connected)
+          setSettings({
+            ...settings,
+            botEnabled: activeUser,
+            songRedeemEnabled,
+            isLoading: false
+          })
+          setPrevSettings({
+            ...settings,
+            botEnabled: activeUser,
+            songRedeemEnabled,
+            isLoading: false
+          })
+        })()
+      }
     }
-  }, [settings, session])
+  }, [settings, session, isInitialFetch, toast, error])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -75,6 +99,9 @@ export default function Dashboard() {
         toast({
           description: (
             <div className='flex justify-center items-center space-x-2'>
+              <div>
+                <PiWarningCircle size={20} />
+              </div>
               <span className='text-base'>Could not save. Please try again.</span>
             </div>
           ),
@@ -89,6 +116,9 @@ export default function Dashboard() {
         toast({
           description: (
             <div className='flex justify-center items-center space-x-2'>
+              <div>
+                <PiWarningCircle size={20} />
+              </div>
               <span className='text-base'>Could not save. Please try again.</span>
             </div>
           ),
@@ -105,6 +135,9 @@ export default function Dashboard() {
         toast({
           description: (
             <div className='flex justify-center items-center space-x-2'>
+              <div>
+                <PiWarningCircle size={20} />
+              </div>
               <span className='text-base'>Could not save. Please try again.</span>
             </div>
           ),
@@ -119,6 +152,9 @@ export default function Dashboard() {
         toast({
           description: (
             <div className='flex justify-center items-center space-x-2'>
+              <div>
+                <PiWarningCircle size={20} />
+              </div>
               <span className='text-base'>Could not save. Please try again.</span>
             </div>
           ),
