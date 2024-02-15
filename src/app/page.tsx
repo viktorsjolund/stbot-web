@@ -1,12 +1,37 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
 import { signIn, useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 import { FaGithub, FaTwitch } from 'react-icons/fa'
+import { PiWarningCircle } from 'react-icons/pi'
 
 export default function Home() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+  const { toast } = useToast()
+
+  useEffect(() => {
+    if (error) {
+      setTimeout(() => {
+        toast({
+          description: (
+            <div className='flex items-center space-x-2'>
+              <div>
+                <PiWarningCircle size={20} />
+              </div>
+              <span>{error.toUpperCase()}</span>
+            </div>
+          ),
+          variant: 'destructive'
+        })
+      }, 0)
+    }
+  }, [toast, error])
 
   return (
     <div className='flex justify-center items-center h-full'>
