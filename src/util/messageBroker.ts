@@ -39,5 +39,4 @@ async function sendToQueue(message: string) {
   } catch (e) {
     throw e
   }
-
 }
