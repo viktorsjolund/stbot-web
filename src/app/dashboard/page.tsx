@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import {
   addActiveUser,
   disableSongRequests,
+  disconnectSpotify,
   enableSongRequests,
   isActiveUser,
   isSongRedeemEnabled,
@@ -183,6 +184,25 @@ export default function Dashboard() {
     setIsSaving(false)
   }
 
+  const handleDisconnectSpotify = async () => {
+    try {
+      await disconnectSpotify()
+      setIsConnected(false)
+    } catch (e) {
+      toast({
+        description: (
+          <div className='flex justify-center items-center space-x-2'>
+            <div>
+              <PiWarningCircle size={20} />
+            </div>
+            <span className='text-base'>Could not disconnect Spotify. Please try again.</span>
+          </div>
+        ),
+        variant: 'destructive'
+      })
+    }
+  }
+
   if (settings.isLoading || typeof isConnected === 'undefined' || status === 'loading') {
     return (
       <div className='flex justify-center items-center h-full'>
@@ -213,6 +233,7 @@ export default function Dashboard() {
             <Button
               className='w-fit flex space-x-2'
               variant='destructive'
+              onClick={handleDisconnectSpotify}
             >
               <div>
                 <MdOutlineLinkOff size={20} />

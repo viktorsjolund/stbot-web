@@ -281,3 +281,23 @@ async function removeChannelPointReward(
     throw e
   }
 }
+
+export async function disconnectSpotify() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user.id) {
+    throw Error('Unauthorized')
+  }
+
+  try {
+    await prisma.user.update({
+      where: {
+        id: session.user.id 
+      },
+      data: {
+        spotifyRefreshToken: null
+      }
+    })
+  } catch (e) {
+    throw e
+  }
+}
