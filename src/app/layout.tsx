@@ -37,7 +37,7 @@ export default async function RootLayout({
           <Provider session={session}>
             <div className='bg-slate-950 h-screen'>
               <Header />
-              <div className='h-full'>{children}</div>
+              <div className='h-full pt-14'>{children}</div>
             </div>
             <Toaster />
           </Provider>
