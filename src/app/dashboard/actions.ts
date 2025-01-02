@@ -12,8 +12,8 @@ import { sendJoinToQueue, sendPartToQueue } from '@/util/messageBroker'
 export async function isUserConnected(session: Session) {
   const user = await prisma.user.findUnique({
     where: {
-      name: session.user.name!
-    }
+      name: session.user.name!,
+    },
   })
 
   if (!user) return false
@@ -31,8 +31,8 @@ export async function isActiveUser(session: Session) {
   try {
     const result = await prisma.activeUser.findFirst({
       where: {
-        user_id: session.user.id
-      }
+        user_id: session.user.id,
+      },
     })
     if (result) {
       return true
@@ -48,8 +48,8 @@ export async function isSongRedeemEnabled(session: Session) {
   try {
     const result = await prisma.songRedemptionUser.findUnique({
       where: {
-        user_id: session.user.id
-      }
+        user_id: session.user.id,
+      },
     })
     if (result) {
       return true
@@ -70,8 +70,8 @@ export async function addActiveUser() {
   try {
     await prisma.activeUser.create({
       data: {
-        user_id: session.user.id
-      }
+        user_id: session.user.id,
+      },
     })
   } catch (e) {
     throw e
@@ -93,8 +93,8 @@ export async function removeActiveUser() {
   try {
     await prisma.activeUser.delete({
       where: {
-        user_id: session.user.id
-      }
+        user_id: session.user.id,
+      },
     })
   } catch (e) {
     throw e
@@ -117,11 +117,11 @@ export async function enableSongRequests() {
   try {
     user = await prisma.user.findUnique({
       where: {
-        id: session.user.id
+        id: session.user.id,
       },
       include: {
-        accounts: true
-      }
+        accounts: true,
+      },
     })
   } catch (e) {
     throw e
@@ -140,24 +140,26 @@ export async function enableSongRequests() {
 
   let result
   try {
-    result = await axios('https://api.twitch.tv/helix/channel_points/custom_rewards', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Client-Id': process.env.TWITCH_CLIENT_ID,
-        'Content-Type': 'application/json'
+    result = await axios(
+      'https://api.twitch.tv/helix/channel_points/custom_rewards',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+          'Content-Type': 'application/json',
+        },
+        params: {
+          broadcaster_id: broadcasterId,
+        },
+        data: {
+          title: 'Queue a song - STBOT',
+          prompt: 'Enter a Spotify song link below or do "ARTIST - SONG NAME"',
+          cost: 50000,
+          is_user_input_required: true,
+        },
       },
-      params: {
-        broadcaster_id: broadcasterId
-      },
-      data: {
-        title: 'Queue a song - STBOT',
-        prompt:
-          'Enter a Spotify song link below or do "ARTIST - SONG NAME" (the dash is important). Note: This only works for songs that are on Spotify.',
-        cost: 50000,
-        is_user_input_required: true
-      }
-    })
+    )
   } catch (e) {
     throw e
   }
@@ -171,21 +173,21 @@ export async function enableSongRequests() {
       headers: {
         Authorization: `Bearer ${appAccessToken}`,
         'Client-ID': process.env.TWITCH_CLIENT_ID,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       data: {
         type: 'channel.channel_points_custom_reward_redemption.add',
         version: '1',
         condition: {
           broadcaster_user_id: broadcasterId,
-          reward_id: rewardId
+          reward_id: rewardId,
         },
         transport: {
           method: 'webhook',
           callback: `${process.env.PUBLIC_URL}/api/webhook/song-redeem`,
-          secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET
-        }
-      }
+          secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
+        },
+      },
     })
   } catch (e) {
     await removeChannelPointReward(rewardId, broadcasterId, accessToken)
@@ -196,8 +198,8 @@ export async function enableSongRequests() {
     await prisma.songRedemptionUser.create({
       data: {
         user_id: user?.id!,
-        reward_id: rewardId
-      }
+        reward_id: rewardId,
+      },
     })
   } catch (e) {
     throw e
@@ -210,16 +212,21 @@ export async function disableSongRequests() {
     throw new Error('Unauthorized')
   }
 
-  let user: (User & { accounts: Account[]; songRedemptionUser: SongRedemptionUser | null }) | null
+  let user:
+    | (User & {
+        accounts: Account[]
+        songRedemptionUser: SongRedemptionUser | null
+      })
+    | null
   try {
     user = await prisma.user.findUnique({
       where: {
-        id: session.user.id
+        id: session.user.id,
       },
       include: {
         accounts: true,
-        songRedemptionUser: true
-      }
+        songRedemptionUser: true,
+      },
     })
   } catch (e) {
     throw e
@@ -238,7 +245,11 @@ export async function disableSongRequests() {
   const accessToken = await getTwitchAccessToken(acc.refresh_token)
 
   try {
-    await removeChannelPointReward(user.songRedemptionUser.reward_id, broadcasterId, accessToken)
+    await removeChannelPointReward(
+      user.songRedemptionUser.reward_id,
+      broadcasterId,
+      accessToken,
+    )
   } catch (e) {
     if (e instanceof AxiosError) {
       if (e.status !== 404) {
@@ -252,8 +263,8 @@ export async function disableSongRequests() {
   try {
     await prisma.songRedemptionUser.delete({
       where: {
-        user_id: user.id
-      }
+        user_id: user.id,
+      },
     })
   } catch (e) {
     throw e
@@ -263,19 +274,19 @@ export async function disableSongRequests() {
 async function removeChannelPointReward(
   rewardId: string,
   broadcasterId: string,
-  accessToken: string
+  accessToken: string,
 ) {
   try {
     await axios('https://api.twitch.tv/helix/channel_points/custom_rewards', {
       method: 'DELETE',
       headers: {
         authorization: `Bearer ${accessToken}`,
-        'Client-Id': process.env.TWITCH_CLIENT_ID
+        'Client-Id': process.env.TWITCH_CLIENT_ID,
       },
       params: {
         broadcaster_id: broadcasterId,
-        id: rewardId
-      }
+        id: rewardId,
+      },
     })
   } catch (e) {
     throw e
@@ -291,11 +302,11 @@ export async function disconnectSpotify() {
   try {
     await prisma.user.update({
       where: {
-        id: session.user.id 
+        id: session.user.id,
       },
       data: {
-        spotifyRefreshToken: null
-      }
+        spotifyRefreshToken: null,
+      },
     })
   } catch (e) {
     throw e
