@@ -1,19 +1,21 @@
 import axios from 'axios'
 
-export async function getSpotifyAccessToken(refreshToken: string): Promise<string | null> {
+export async function getSpotifyAccessToken(
+  refreshToken: string,
+): Promise<string | null> {
   try {
     const result = await axios('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Authorization: `Basic ${Buffer.from(
-          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
-        ).toString('base64')}`
+          `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
+        ).toString('base64')}`,
       },
       data: {
         grant_type: 'refresh_token',
-        refresh_token: refreshToken
-      }
+        refresh_token: refreshToken,
+      },
     })
 
     return result.data.access_token as string
@@ -23,37 +25,40 @@ export async function getSpotifyAccessToken(refreshToken: string): Promise<strin
 }
 
 export async function getCurrentSong(
-  accessToken: string
+  accessToken: string,
 ): Promise<{ status: number; data: Object } | null> {
   try {
-    const result = await axios('https://api.spotify.com/v1/me/player/currently-playing', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    })
+    const result = await axios(
+      'https://api.spotify.com/v1/me/player/currently-playing',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    )
 
     return {
       data: result.data,
-      status: result.status
+      status: result.status,
     }
   } catch (e) {
     return null
   }
 }
 
-export async function getTrackIdFromSearch(song: string, artist: string, accessToken: string) {
+export async function getTrackIdFromSearch(input: string, accessToken: string) {
   try {
     const result = await axios('https://api.spotify.com/v1/search', {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: `Bearer ${accessToken}`,
       },
       params: {
-        q: `remaster%20track:${song}%20artist:${artist}`,
+        q: encodeURIComponent(input),
         type: 'track',
         limit: 1,
-        offset: 0
-      }
+        offset: 0,
+      },
     })
 
     return result.data.tracks.items[0].uri.split(':')[2] as string
@@ -67,8 +72,8 @@ export async function getTrack(trackId: string, accessToken: string) {
     const result = await axios(`https://api.spotify.com/v1/tracks/${trackId}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+        Authorization: `Bearer ${accessToken}`,
+      },
     })
     return result.data
   } catch (e) {
@@ -81,9 +86,9 @@ export async function queueSong(trackId: string, accessToken: string) {
     await axios('https://api.spotify.com/v1/me/player/queue', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: `Bearer ${accessToken}`,
       },
-      params: { uri: `spotify:track:${trackId}` }
+      params: { uri: `spotify:track:${trackId}` },
     })
   } catch (e) {
     throw e
