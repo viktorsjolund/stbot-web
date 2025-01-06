@@ -47,10 +47,17 @@ model User {
   accounts            Account[]
   sessions            Session[]
   activeUser          ActiveUser?
+  skipUser            SkipUser?
   songRedemptionUser  SongRedemptionUser?
 }
 
 model ActiveUser {
+  id      String @id @default(cuid())
+  user_id String @unique
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model SkipUser {
   id      String @id @default(cuid())
   user_id String @unique
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
