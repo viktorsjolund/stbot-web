@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 export async function getSpotifyAccessToken(
   refreshToken: string,
@@ -21,6 +21,34 @@ export async function getSpotifyAccessToken(
     return result.data.access_token as string
   } catch (e) {
     return null
+  }
+}
+
+export async function skipCurrentSong(
+  accessToken: string,
+): Promise<{ status: number; message?: string }> {
+  try {
+    await axios('https://api.spotify.com/v1/me/player/next', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    return {
+      status: 200,
+    }
+  } catch (e) {
+    if (e instanceof AxiosError) {
+      return {
+        status: e.status || 400,
+        message: e.message,
+      }
+    }
+
+    return {
+      status: 500,
+    }
   }
 }
 
