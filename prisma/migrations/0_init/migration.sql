@@ -47,6 +47,14 @@ CREATE TABLE "ActiveUser" (
 );
 
 -- CreateTable
+CREATE TABLE "SkipUser" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+
+    CONSTRAINT "SkipUser_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "SongRedemptionUser" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
@@ -84,6 +92,9 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "ActiveUser_user_id_key" ON "ActiveUser"("user_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "SkipUser_user_id_key" ON "SkipUser"("user_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "SongRedemptionUser_user_id_key" ON "SongRedemptionUser"("user_id");
 
 -- CreateIndex
@@ -91,3 +102,4 @@ CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token"
 
 -- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
