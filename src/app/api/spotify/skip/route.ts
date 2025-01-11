@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
-import { ActiveUser, User } from '@prisma/client'
+import { ActiveUser, SkipUser, User } from '@prisma/client'
 import { getSpotifyAccessToken, skipCurrentSong } from '@/util/spotify'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let user: (User & { activeUser: ActiveUser | null }) | null
+  let user:
+    | (User & { activeUser: ActiveUser | null; skipUser: SkipUser | null })
+    | null
   try {
     user = await prisma.user.findFirst({
       where: {
@@ -24,12 +26,18 @@ export async function POST(req: NextRequest) {
       },
       include: {
         activeUser: true,
+        skipUser: true,
       },
     })
 
     if (!user?.activeUser) {
       return NextResponse.json(
         { error: 'User does not have the bot enabled.' },
+        { status: 403 },
+      )
+    } else if (!user.skipUser) {
+      return NextResponse.json(
+        { error: 'User does not have song skipping enabled.' },
         { status: 403 },
       )
     }
