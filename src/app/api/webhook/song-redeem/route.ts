@@ -130,11 +130,11 @@ async function handler(req: NextRequest) {
   }
 
   try {
-    await queueSong(trackId, accessToken)
     await sendMessageToQueue(
       user.name!,
       `> ${track.artists[0].name} - ${track.name}`,
     )
+    await queueSong(track.uri, accessToken)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not queue song.')
     await refundChannelPoints(

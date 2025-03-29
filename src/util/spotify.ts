@@ -109,14 +109,14 @@ export async function getTrack(trackId: string, accessToken: string) {
   }
 }
 
-export async function queueSong(trackId: string, accessToken: string) {
+export async function queueSong(uri: string, accessToken: string) {
   try {
     await axios('https://api.spotify.com/v1/me/player/queue', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      params: { uri: `spotify:track:${trackId}` },
+      params: { uri },
     })
   } catch (e) {
     throw e
