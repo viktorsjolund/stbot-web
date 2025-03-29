@@ -130,10 +130,6 @@ async function handler(req: NextRequest) {
   }
 
   try {
-    await sendMessageToQueue(
-      user.name!,
-      `> ${track.artists[0].name} - ${track.name}`,
-    )
     await queueSong(track.uri, accessToken)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not queue song.')
@@ -145,6 +141,11 @@ async function handler(req: NextRequest) {
     )
     return NextResponse.json({ error: 'Could not queue song' }, { status: 400 })
   }
+
+  await sendMessageToQueue(
+    user.name!,
+    `> ${track.artists[0].name} - ${track.name}`,
+  )
 
   return NextResponse.json({ message: 'OK' }, { status: 200 })
 }
