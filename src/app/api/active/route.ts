@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const liveStreams = await axios.get('https://api.twitch.tv/helix/streams', {
+    const { data } = await axios.get('https://api.twitch.tv/helix/streams', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Client-Id': process.env.TWITCH_CLIENT_ID,
@@ -46,7 +46,9 @@ export async function GET(req: NextRequest) {
         type: 'live',
       },
     })
-    return NextResponse.json({ users: liveStreams.data.data })
+
+    const users = data.data.map((s: { user_name: string }) => s.user_name)
+    return NextResponse.json({ users })
   } catch (e) {
     return NextResponse.json(
       { error: 'Internal Server Error' },
