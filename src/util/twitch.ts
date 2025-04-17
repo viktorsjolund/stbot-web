@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { prisma } from '@/prisma'
 
 export const getTwitchAccessToken = async (refreshToken: string) => {
   try {
@@ -9,8 +10,8 @@ export const getTwitchAccessToken = async (refreshToken: string) => {
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
         client_id: process.env.TWITCH_CLIENT_ID,
-        client_secret: process.env.TWITCH_CLIENT_SECRET
-      }
+        client_secret: process.env.TWITCH_CLIENT_SECRET,
+      },
     })
 
     return result.data.access_token
@@ -27,8 +28,8 @@ export const getTwitchAppAccessToken = async () => {
       params: {
         grant_type: 'client_credentials',
         client_secret: process.env.TWITCH_CLIENT_SECRET,
-        client_id: process.env.TWITCH_CLIENT_ID
-      }
+        client_id: process.env.TWITCH_CLIENT_ID,
+      },
     })
 
     return result.data.access_token
@@ -37,28 +38,64 @@ export const getTwitchAppAccessToken = async () => {
   }
 }
 
+export const getBroadcasterId = async (userId: string) => {
+  try {
+    const accounts = await prisma.account.findMany({
+      where: {
+        id: userId,
+      },
+    })
+
+    return accounts.filter((a) => a.provider === 'twitch')[0].providerAccountId
+  } catch (e) {
+    throw e
+  }
+}
+
+export const removeWebhook = async (id: string) => {
+  const accessToken = getTwitchAppAccessToken()
+
+  try {
+    await axios('https://api.twitch.tv/helix/eventsub/subscriptions', {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Client-Id': process.env.TWITCH_CLIENT_ID,
+      },
+      params: {
+        id,
+      },
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
 export const refundChannelPoints = async (
   redemptionId: string,
   rewardId: string,
   broadcasterId: string,
-  accessToken: string
+  accessToken: string,
 ) => {
   try {
-    await axios('https://api.twitch.tv/helix/channel_points/custom_rewards/redemptions', {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Client-Id': process.env.TWITCH_CLIENT_ID
+    await axios(
+      'https://api.twitch.tv/helix/channel_points/custom_rewards/redemptions',
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+        data: {
+          status: 'CANCELED',
+        },
+        params: {
+          id: redemptionId,
+          broadcaster_id: broadcasterId,
+          reward_id: rewardId,
+        },
       },
-      data: {
-        status: 'CANCELED'
-      },
-      params: {
-        id: redemptionId,
-        broadcaster_id: broadcasterId,
-        reward_id: rewardId
-      }
-    })
+    )
   } catch (e) {
     throw e
   }

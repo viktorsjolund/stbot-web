@@ -5,7 +5,12 @@ import { authOptions } from '../auth'
 import { prisma } from '@/prisma'
 import { getSpotifyAccessToken } from '@/util/spotify'
 import axios, { AxiosError } from 'axios'
-import { getTwitchAccessToken, getTwitchAppAccessToken } from '@/util/twitch'
+import {
+  getBroadcasterId,
+  getTwitchAccessToken,
+  getTwitchAppAccessToken,
+  removeWebhook,
+} from '@/util/twitch'
 import { Account, SongRedemptionUser, User } from '@prisma/client'
 import { sendJoinToQueue, sendPartToQueue } from '@/util/messageBroker'
 
@@ -68,9 +73,68 @@ export async function addActiveUser() {
   }
 
   try {
+    const broadcasterId = await getBroadcasterId(session.user.id)
+    const accessToken = await getTwitchAppAccessToken()
+
+    const streamOnlineRes = await axios.post(
+      'https://api.twitch.tv/helix/eventsub/subscriptions',
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+        data: {
+          type: 'stream.online',
+          version: '1',
+          condition: {
+            broadcaster_user_id: broadcasterId,
+          },
+          transport: {
+            method: 'webhook',
+            callback: `${process.env.PUBLIC_URL}/api/webhook/stream/online`,
+            secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
+          },
+        },
+      },
+    )
+
+    if (streamOnlineRes.status !== 202) {
+      throw new Error('Failed to create stream online webhook subscription')
+    }
+
+    const streamOfflineRes = await axios.post(
+      'https://api.twitch.tv/helix/eventsub/subscriptions',
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID,
+        },
+        data: {
+          type: 'stream.offline',
+          version: '1',
+          condition: {
+            broadcaster_user_id: broadcasterId,
+          },
+          transport: {
+            method: 'webhook',
+            callback: `${process.env.PUBLIC_URL}/api/webhook/stream/offline`,
+            secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
+          },
+        },
+      },
+    )
+
+    if (streamOfflineRes.status !== 202) {
+      throw new Error('Failed to create stream offline webhook subscription')
+    }
+
     await prisma.activeUser.create({
       data: {
         user_id: session.user.id,
+        online_webhook_id: streamOnlineRes.data.data[0].id,
+        offline_webhook_id: streamOfflineRes.data.data[0].id,
       },
     })
   } catch (e) {
@@ -91,6 +155,15 @@ export async function removeActiveUser() {
   }
 
   try {
+    const user = await prisma.activeUser.findFirstOrThrow({
+      where: {
+        user_id: session.user.id,
+      },
+    })
+
+    await removeWebhook(user.online_webhook_id)
+    await removeWebhook(user.offline_webhook_id)
+
     await prisma.activeUser.delete({
       where: {
         user_id: session.user.id,
