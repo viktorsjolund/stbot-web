@@ -161,8 +161,13 @@ export async function removeActiveUser() {
       },
     })
 
-    await removeWebhook(user.online_webhook_id)
-    await removeWebhook(user.offline_webhook_id)
+    if (user.online_webhook_id) {
+      await removeWebhook(user.online_webhook_id)
+    }
+
+    if (user.offline_webhook_id) {
+      await removeWebhook(user.offline_webhook_id)
+    }
 
     await prisma.activeUser.delete({
       where: {
