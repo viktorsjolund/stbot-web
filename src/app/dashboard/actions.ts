@@ -76,25 +76,26 @@ export async function addActiveUser() {
     const broadcasterId = await getBroadcasterId(session.user.id)
     const accessToken = await getTwitchAppAccessToken()
 
+    console.log(broadcasterId)
+
     const streamOnlineRes = await axios.post(
       'https://api.twitch.tv/helix/eventsub/subscriptions',
-      {},
+      {
+        type: 'stream.online',
+        version: '1',
+        condition: {
+          broadcaster_user_id: broadcasterId,
+        },
+        transport: {
+          method: 'webhook',
+          callback: `${process.env.PUBLIC_URL}/api/webhook/stream/online`,
+          secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
+        },
+      },
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-        data: {
-          type: 'stream.online',
-          version: '1',
-          condition: {
-            broadcaster_user_id: broadcasterId,
-          },
-          transport: {
-            method: 'webhook',
-            callback: `${process.env.PUBLIC_URL}/api/webhook/stream/online`,
-            secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
-          },
         },
       },
     )
@@ -105,23 +106,22 @@ export async function addActiveUser() {
 
     const streamOfflineRes = await axios.post(
       'https://api.twitch.tv/helix/eventsub/subscriptions',
-      {},
+      {
+        type: 'stream.offline',
+        version: '1',
+        condition: {
+          broadcaster_user_id: broadcasterId,
+        },
+        transport: {
+          method: 'webhook',
+          callback: `${process.env.PUBLIC_URL}/api/webhook/stream/offline`,
+          secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
+        },
+      },
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Client-Id': process.env.TWITCH_CLIENT_ID,
-        },
-        data: {
-          type: 'stream.offline',
-          version: '1',
-          condition: {
-            broadcaster_user_id: broadcasterId,
-          },
-          transport: {
-            method: 'webhook',
-            callback: `${process.env.PUBLIC_URL}/api/webhook/stream/offline`,
-            secret: process.env.TWITCH_WEBHOOK_CALLBACK_SECRET,
-          },
         },
       },
     )

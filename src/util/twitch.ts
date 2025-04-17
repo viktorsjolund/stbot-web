@@ -42,7 +42,7 @@ export const getBroadcasterId = async (userId: string) => {
   try {
     const accounts = await prisma.account.findMany({
       where: {
-        id: userId,
+        userId,
       },
     })
 
@@ -53,7 +53,7 @@ export const getBroadcasterId = async (userId: string) => {
 }
 
 export const removeWebhook = async (id: string) => {
-  const accessToken = getTwitchAppAccessToken()
+  const accessToken = await getTwitchAppAccessToken()
 
   try {
     await axios('https://api.twitch.tv/helix/eventsub/subscriptions', {
