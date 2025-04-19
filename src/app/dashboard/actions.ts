@@ -76,8 +76,6 @@ export async function addActiveUser() {
     const broadcasterId = await getBroadcasterId(session.user.id)
     const accessToken = await getTwitchAppAccessToken()
 
-    console.log(broadcasterId)
-
     const streamOnlineRes = await axios.post(
       'https://api.twitch.tv/helix/eventsub/subscriptions',
       {
