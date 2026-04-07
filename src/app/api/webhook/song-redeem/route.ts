@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/prisma'
 import { User } from '@prisma/client'
 import { sendMessageToQueue } from '@/util/messageBroker'
-import { refundChannelPoints } from '@/util/twitch'
+import { getTwitchAppAccessToken, refundChannelPoints } from '@/util/twitch'
 const messageIds = new Set<string>()
 
 async function handler(req: NextRequest) {
@@ -79,10 +79,18 @@ async function handler(req: NextRequest) {
     )
   }
 
-  const accessToken = await getSpotifyAccessToken(user.spotifyRefreshToken)
-  if (!accessToken) {
+  const spotifyToken = await getSpotifyAccessToken(user.spotifyRefreshToken)
+  if (!spotifyToken) {
     return NextResponse.json(
-      { error: 'Could not get access token.' },
+      { error: 'Could not get spotify access token.' },
+      { status: 500 },
+    )
+  }
+
+  const twitchToken = await getTwitchAppAccessToken()
+  if (!twitchToken) {
+    return NextResponse.json(
+      { error: 'Could not get twitch access token.' },
       { status: 500 },
     )
   }
@@ -97,13 +105,13 @@ async function handler(req: NextRequest) {
     trackId = tokens[tokens.length - 1].split('?')[0]
   } else {
     try {
-      trackId = await getTrackIdFromSearch(input, accessToken)
+      trackId = await getTrackIdFromSearch(input, spotifyToken)
     } catch (e) {
       await refundChannelPoints(
         redemptionId,
         rewardId,
         broadcasterId,
-        accessToken,
+        twitchToken,
       )
       return NextResponse.json(
         { error: 'Something went wrong...' },
@@ -114,14 +122,14 @@ async function handler(req: NextRequest) {
 
   let track
   try {
-    track = await getTrack(trackId, accessToken)
+    track = await getTrack(trackId, spotifyToken)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not find song.')
     await refundChannelPoints(
       redemptionId,
       rewardId,
       broadcasterId,
-      accessToken,
+      twitchToken,
     )
     return NextResponse.json(
       { error: `Could not find song with id: ${trackId}` },
@@ -130,14 +138,14 @@ async function handler(req: NextRequest) {
   }
 
   try {
-    await queueSong(track.uri, accessToken)
+    await queueSong(track.uri, spotifyToken)
   } catch (e) {
     await sendMessageToQueue(user.name!, 'Could not queue song.')
     await refundChannelPoints(
       redemptionId,
       rewardId,
       broadcasterId,
-      accessToken,
+      twitchToken,
     )
     return NextResponse.json({ error: 'Could not queue song' }, { status: 400 })
   }
